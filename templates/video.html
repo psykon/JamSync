@@ -1,0 +1,65 @@
+<head>
+  <link href="/static/video-js.css" rel="stylesheet" />
+
+  <!-- If you'd like to support IE8 (for Video.js versions prior to v7) -->
+  <!-- <script src="https://vjs.zencdn.net/ie8/1.1.2/videojs-ie8.min.js"></script> -->
+  <style>
+    video {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    transform: translateX(calc((100% - 100vw) / 2));
+}
+  </style>
+</head>
+
+<body>
+  <video class="video-js vjs-layout-large" data-setup='{"controls": true, "autoplay": true, "preload": "auto"}' id="vid">
+    <source src="/content/beyond.webm" type="video/mp4" />
+  </video>
+
+  <script src="/static/video.min.js"></script>
+  <script>
+    var player = videojs('vid');
+    var ws = new WebSocket("ws://localhost:8080/ws/player");
+
+    ws.addEventListener('message', function (event) {
+      console.log('Message from server ', event.data);
+      if (event.data == 'control-play') {
+        player.play();
+      }
+      if (event.data == 'control-pause') {
+        player.pause();
+      }
+      if (event.data.startsWith("server-source:")) {
+        let source = event.data.substring(14);
+        console.log('Got new source: ', source);
+        player.src(source);
+        player.play();
+      }
+    });
+
+
+
+    player.on('pause', function() {
+      ws.send("player-pause");
+      console.log("clicked pause");
+      // player.src ("/static/bomb.mp4");
+      
+    });
+    player.on('play', function() {
+      ws.send("player-play");
+      console.log("clicked play");
+    // player.src ("/static/bomb.mp4");
+
+});
+    player.on('ended', function() {
+      ws.send("player-ended");
+      console.log("videoended");
+    // player.src ("/static/bomb.mp4");
+
+});
+  </script>
+</body>

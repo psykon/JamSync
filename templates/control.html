@@ -1,0 +1,88 @@
+<head>
+    <link rel="stylesheet" href="/static/simple.min.css">
+</head>
+
+
+<body>
+    <header>
+
+        <button onclick="sendPlay()">Play</button>
+        <button onclick="sendPause()">Pause</button>
+        <button onclick="startPlaylist()">StartPlaylist</button>
+        <button onclick="next()">Next</button>
+        <button onclick="prev()">Previous</button>
+    </header>
+    <div>
+
+        <h1>Currently Playing</h1>
+        <h3 id="current" style="color:#ffb300"></h3>
+        <img id="slide" src="" style="width:400px;">
+    </div>
+    <div>
+
+        <h1>Playlist</h1>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Source</th>
+                <th></th>
+            </tr>
+            {{ range .C.Playlist }}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.Name}}</td>
+                <td>{{.Source}}</td>
+                <td><button onclick="start({{.ID}})">Play</button></td>
+            </tr>
+            {{ end }}
+    
+        </table>
+    </div>
+    
+
+</body>
+
+ <script>
+    var ws = new WebSocket("ws://localhost:8080/ws/control");
+
+    ws.addEventListener('message', function (event) {
+        console.log('Message from server ', event.data);
+        if (event.data.startsWith("server-name:")) {
+            let name = event.data.substring(12);
+            console.log('Got new name: ', name);
+           document.getElementById("current").innerHTML = name
+      };
+       if (event.data.startsWith("server-slide:")) {
+            let slide = event.data.substring(13);
+            console.log('Got new slide: ', slide);
+           document.getElementById("slide").src = slide
+      }
+    });
+
+    function sendPlay(){
+        ws.send("control-play");
+        console.log("pressed play")
+    }
+    function sendPause(){
+        ws.send("control-pause");
+        console.log("pressed pause")
+    }
+    function startPlaylist(){
+        ws.send("control-start");
+        console.log("pressed startPlaylist")
+    }
+    function next(){
+        ws.send("control-next");
+        console.log("pressed Next")
+    }
+    function prev(){
+        ws.send("control-prev");
+        console.log("pressed Previsous")
+    }
+    function start(id){
+        ws.send("control-set:" + id);
+        console.log("pressed start")
+    }
+ 
+  </script>

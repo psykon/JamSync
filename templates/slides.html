@@ -3,7 +3,7 @@
 </body>
 
  <script>
-    var ws = new WebSocket("ws://localhost:8080/ws/slides");
+    var ws = new WebSocket("ws://{{.C.IP}}:8080/ws/slides");
 
     ws.addEventListener('message', function (event) {
         console.log('Message from server ', event.data);

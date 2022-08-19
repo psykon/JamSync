@@ -23,7 +23,7 @@
   <script src="/static/video.min.js"></script>
   <script>
     var player = videojs('vid');
-    var ws = new WebSocket("ws://localhost:8080/ws/player");
+    var ws = new WebSocket("ws://{{.C.IP}}:8080/ws/player");
 
     ws.addEventListener('message', function (event) {
       console.log('Message from server ', event.data);

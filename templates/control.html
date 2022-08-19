@@ -44,7 +44,7 @@
 </body>
 
  <script>
-    var ws = new WebSocket("ws://localhost:8080/ws/control");
+    var ws = new WebSocket("ws://{{.C.IP}}:8080/ws/control");
 
     ws.addEventListener('message', function (event) {
         console.log('Message from server ', event.data);

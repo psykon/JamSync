@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +13,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
+
+var (
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin:     func(r *http.Request) bool { return true },
+	}
+
+	cpool = []client{}
+
+	pl = []Playlist{}
+
+	C = Controller{}
+)
+
+// Types and Methods
 
 type client struct {
 	source string
@@ -28,11 +45,14 @@ type Playlist struct {
 type Controller struct {
 	Playlist []Playlist
 	Position int
+	IP       string
 }
 
 func (c *Controller) Next() {
 	if c.Position < len(c.Playlist)-1 {
 		c.Position++
+	} else {
+		c.Position = 0
 	}
 }
 
@@ -56,23 +76,27 @@ func (c *Controller) CurrentSlide() string {
 	return c.Playlist[c.Position].Slide
 }
 
-func InitController() {
-	readPlaylist()
-	C = Controller{Playlist: pl, Position: 0}
-}
+// Functions
 
-var (
-	upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+func getIp() string {
+	conn, error := net.Dial("udp", "8.8.8.8:80")
+	if error != nil {
+		fmt.Println(error)
+
 	}
 
-	cpool = []client{}
+	defer conn.Close()
+	ipAddress := conn.LocalAddr().(*net.UDPAddr)
+	fmt.Printf("IP: %s \n", ipAddress.IP.String())
+	return ipAddress.IP.String()
+}
 
-	pl = []Playlist{}
+func InitController() {
+	readPlaylist()
+	ip := getIp()
+	C = Controller{Playlist: pl, Position: 0, IP: ip}
 
-	C = Controller{}
-)
+}
 
 func sendall(message []byte) {
 	for _, c := range cpool {
@@ -122,10 +146,10 @@ func main() {
 	})
 
 	r.GET("/player", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "video.html", gin.H{})
+		c.HTML(http.StatusOK, "video.html", gin.H{"C": C})
 	})
 	r.GET("/slides", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "slides.html", gin.H{})
+		c.HTML(http.StatusOK, "slides.html", gin.H{"C": C})
 	})
 	r.GET("/control", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "control.html", gin.H{"C": C})
@@ -148,7 +172,10 @@ func main() {
 
 				mt, message, err := cl.conn.ReadMessage()
 				if err != nil {
+
 					log.Println("read:", err, " : ", fmt.Sprint(mt))
+					break
+
 				}
 
 				log.Printf("recv: %s : from %s", message, cl.source)
